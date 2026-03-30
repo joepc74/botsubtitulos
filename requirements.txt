@@ -1,0 +1,4 @@
+faster_whisper==1.2.1
+gemini_srt_translator==3.0.1
+Pyrogram==2.0.106
+python-dotenv==1.2.2
