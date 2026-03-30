@@ -43,8 +43,14 @@ async def handle_video(client, message):
     status = await message.reply("⏳ Descargando video...")
 
     # Descargar el archivo (Pyrogram soporta hasta 2GB)
-    file_path = await message.download()
-    rutas[message.id] = file_path
+    try:
+        file_path = await message.download()
+        rutas[message.id] = file_path
+
+    except Exception as e:
+        print(f"Error al descargar el video: {e}")
+        await status.edit("❌ Error al descargar el video. Por favor, inténtalo de nuevo.")
+        return
 
     # 2. Crear botones de idioma
     keyboard = types.InlineKeyboardMarkup([
@@ -93,15 +99,20 @@ async def language_selected(client, callback_query):
     # os.rename(f"{base}.srt", subtitulo_path)
 
     # Transcribe con faster-whisper
-    model = WhisperModel("small", device="cpu", compute_type="int8")
+    try:
+        model = WhisperModel("small", device="cpu", compute_type="int8")
 
-    if language == "other":
-        segments, info = model.transcribe(file_path)
-        language = info.language
-    else:
-        segments, info = model.transcribe(file_path, language=language)
-    base, ext = os.path.splitext(file_path)
-    subtitulo_path = f"{base}.{language}.srt"
+        if language == "other":
+            segments, info = model.transcribe(file_path)
+            language = info.language
+        else:
+            segments, info = model.transcribe(file_path, language=language)
+        base, ext = os.path.splitext(file_path)
+        subtitulo_path = f"{base}.{language}.srt"
+    except Exception as e:
+        print(f"Error al transcribir el video: {e}")
+        await callback_query.edit_message_text("❌ Error al transcribir el video. Asegúrate de que el formato sea compatible y vuelve a intentarlo.")
+        return
 
     try:
         with open(subtitulo_path, "w", encoding="utf-8") as srt:
