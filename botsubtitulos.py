@@ -2,10 +2,8 @@ from pyrogram import Client, filters, types
 from dotenv import load_dotenv
 import gemini_srt_translator as gst
 import os,subprocess
-import whisper_ctranslate2
 
 rutas={}
-whisper = whisper_ctranslate2.WhisperCTranslate2()
 
 # Carga los valores del archivo .env
 load_dotenv()
