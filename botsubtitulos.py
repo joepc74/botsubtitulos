@@ -14,6 +14,7 @@ client_session = os.getenv('client_session')
 bot_token = os.getenv('bot_token')
 gemini_api_key = os.getenv('gemini_api_key')
 gemini_api_key2 = os.getenv('gemini_api_key2')
+valid_users = os.getenv('valid_users').split(",") if os.getenv('valid_users') else None
 
 app = Client("video_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
@@ -40,6 +41,9 @@ def format_timestamp(
 # 1. Manejador para recibir el video
 @app.on_message(filters.video)
 async def handle_video(client, message):
+    if valid_users and str(message.from_user.id) not in valid_users:
+        await message.reply("❌ No tienes permiso para usar este bot.")
+        return
     status = await message.reply("⏳ Descargando video...")
 
     # Descargar el archivo (Pyrogram soporta hasta 2GB)

@@ -58,6 +58,7 @@ client_session=YOUR_CLIENT_SESSION
 bot_token=YOUR_BOT_TOKEN
 gemini_api_key=YOUR_GEMINI_API_KEY
 gemini_api_key2=YOUR_GEMINI_API_KEY_2
+valid_users=LISTA_DE_IDS_DE_USUARIOS_VALIDOS_SEPARADOS_POR_COMAS
 ```
 
 ### Cómo obtener las credenciales:
