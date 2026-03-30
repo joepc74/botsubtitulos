@@ -121,7 +121,7 @@ async def language_selected(client, callback_query):
                 srt.write(f"{i+1}\n{format_timestamp(segment.start)} --> {format_timestamp(segment.end)}\n{segment.text[1:]}\n\n")
                 if (i%10==0):
                     porcentaje = segment.start / info.duration * 100
-                    barra = '█' * int(porcentaje // 10) + '▒' * (10 - int(porcentaje // 10))
+                    barra = '█' * int(porcentaje // 10) + '░' * (10 - int(porcentaje // 10))
                     texto = f"Progreso: |{barra}| {porcentaje:.1f}%"
                     # bot.edit_message_text(chat_id=..., message_id=..., text=texto)
                     await callback_query.edit_message_text(texto)
