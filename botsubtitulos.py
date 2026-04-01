@@ -161,6 +161,11 @@ async def language_selected(client, callback_query):
             except Exception as e:
                 print(f"Error al traducir los subtítulos: {e}")
                 await callback_query.message.reply_text("⚠️ No se pudieron traducir los subtítulos al Español.")
+
+        # si existe el archivo .{language}.progress, lo borra
+        if os.path.exists(f"{base}.{language}.progress"):
+            os.remove(f"{base}.{language}.progress")
+
         os.remove(subtitulo_path)
 
 app.run()
