@@ -38,7 +38,17 @@ def format_timestamp(
         f"{hours_marker}{minutes:02d}:{seconds:02d}{decimal_marker}{milliseconds:03d}"
     )
 
-# 1. Manejador para recibir el video
+# Manejador de inicio
+@app.on_message(filters.command("start"))
+async def start(client, message):
+    if valid_users and str(message.from_user.id) not in valid_users:
+        await message.reply("❌ No tienes permiso para usar este bot.")
+        return
+    await message.reply(
+        "👋 ¡Hola! Soy un bot que puede generar subtítulos para tus videos. Simplemente envíame un video y elige el idioma del audio para obtener los subtítulos en formato SRT."
+    )
+
+# Manejador para recibir el video
 @app.on_message(filters.video)
 async def handle_video(client, message):
     if valid_users and str(message.from_user.id) not in valid_users:
