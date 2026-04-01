@@ -1,7 +1,7 @@
 from pyrogram import Client, filters, types
 from dotenv import load_dotenv
 import gemini_srt_translator as gst
-import os,subprocess
+import os,sys
 from faster_whisper import WhisperModel
 
 rutas={}
@@ -15,6 +15,7 @@ bot_token = os.getenv('bot_token')
 gemini_api_key = os.getenv('gemini_api_key')
 gemini_api_key2 = os.getenv('gemini_api_key2')
 valid_users = os.getenv('valid_users').split(",") if os.getenv('valid_users') else None
+superuser=os.getenv('superuser')
 
 app = Client("video_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
@@ -47,6 +48,16 @@ async def start(client, message):
     await message.reply(
         "👋 ¡Hola! Soy un bot que puede generar subtítulos para tus videos. Simplemente envíame un video y elige el idioma del audio para obtener los subtítulos en formato SRT."
     )
+
+# Manejador de fin para parar el bot
+@app.on_message(filters.command("stop"))
+async def stop(client, message):
+    if message.from_user.id != superuser:
+        await message.reply("❌ No tienes permiso para realizar esta acción.")
+        return
+    await message.reply("👋 ¡Adiós! El bot se ha detenido.")
+    await app.stop()
+    sys.exit(0)
 
 # Manejador para recibir el video
 @app.on_message(filters.video)
