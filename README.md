@@ -59,6 +59,7 @@ bot_token=YOUR_BOT_TOKEN
 gemini_api_key=YOUR_GEMINI_API_KEY
 gemini_api_key2=YOUR_GEMINI_API_KEY_2
 valid_users=LISTA_DE_IDS_DE_USUARIOS_VALIDOS_SEPARADOS_POR_COMAS
+superuser=ID_DEL_USUARIO_CON_PERMISOS_ESPECIALES
 ```
 
 ### Cómo obtener las credenciales:
