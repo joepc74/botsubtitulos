@@ -192,7 +192,6 @@ async def language_selected(client, callback_query):
 async def start_bot():
     await app.start()
     try:
-        print(f"Bot de subtítulos iniciado correctamente. Enviando mensaje de inicio al superusuario: {superuser}...")
         await app.send_message(chat_id=str(superuser), text="El bot de subtítulos ha iniciado correctamente.")
     except Exception as e:
         print(f"Error al enviar mensaje de inicio: {e}")
