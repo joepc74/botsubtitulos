@@ -16,6 +16,7 @@ gemini_api_key = os.getenv('gemini_api_key')
 gemini_api_key2 = os.getenv('gemini_api_key2')
 valid_users = os.getenv('valid_users').split(",") if os.getenv('valid_users') else None
 superuser=os.getenv('superuser')
+print(f"Bot iniciado. Usuarios válidos: {valid_users}, Superusuario: {superuser}")
 
 app = Client("video_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
