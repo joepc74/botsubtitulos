@@ -1,4 +1,4 @@
-from pyrogram import Client, filters, types
+from pyrogram import Client, filters, types, idle
 from dotenv import load_dotenv
 import gemini_srt_translator as gst
 import os,sys
@@ -52,11 +52,11 @@ async def start(client, message):
 # Manejador de fin para parar el bot
 @app.on_message(filters.command("stop"))
 async def stop(client, message):
-    if message.from_user.id != superuser:
+    if str(message.from_user.id) != superuser:
         await message.reply("❌ No tienes permiso para realizar esta acción.")
         return
     await message.reply("👋 ¡Adiós! El bot se ha detenido.")
-    await app.stop()
+    # Detiene el cliente de Pyrogram
     sys.exit(0)
 
 # Manejador para recibir el video
@@ -189,4 +189,10 @@ async def language_selected(client, callback_query):
 
         os.remove(subtitulo_path)
 
-app.run()
+async def start_bot():
+    await app.start()
+    await app.send_message(chat_id=superuser, text="El bot de subtítulos ha iniciado correctamente.")
+    await idle()
+    # await app.stop()
+
+app.run(start_bot())
