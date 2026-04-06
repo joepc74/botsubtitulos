@@ -16,7 +16,6 @@ gemini_api_key = os.getenv('gemini_api_key')
 gemini_api_key2 = os.getenv('gemini_api_key2')
 valid_users = os.getenv('valid_users').split(",") if os.getenv('valid_users') else None
 superuser=os.getenv('superuser')
-print(f"Bot iniciado. Usuarios válidos: {valid_users}, Superusuario: {superuser}")
 
 app = Client("video_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
@@ -193,6 +192,7 @@ async def language_selected(client, callback_query):
 async def start_bot():
     await app.start()
     try:
+        print(f"Bot de subtítulos iniciado correctamente. Enviando mensaje de inicio al superusuario: {superuser}...")
         await app.send_message(chat_id=str(superuser), text="El bot de subtítulos ha iniciado correctamente.")
     except Exception as e:
         print(f"Error al enviar mensaje de inicio: {e}")
