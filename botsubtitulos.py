@@ -103,6 +103,8 @@ async def handle_srt(client, message):
     if os.path.exists(output_path):
         await message.reply_document(output_path, caption="Archivo SRT traducido al Español.")
         os.remove(output_path)
+    else:
+        await status.edit("❌ Error al traducir el archivo SRT al Español.")
     if os.path.exists(file_path):
         os.remove(file_path)
 
