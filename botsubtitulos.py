@@ -39,6 +39,24 @@ def format_timestamp(
         f"{hours_marker}{minutes:02d}:{seconds:02d}{decimal_marker}{milliseconds:03d}"
     )
 
+async def traducir_srt(input_path, output_path, target_language="Spanish"):
+    print(f"Traduciendo {input_path} a {output_path} en idioma {target_language}")
+    try:
+        # Traducción automática usando gemini_srt_translator
+        gst.gemini_api_key = gemini_api_key
+        gst.gemini_api_key2 = gemini_api_key2
+        gst.target_language = target_language
+        gst.input_file = input_path
+        gst.output_file= output_path
+        gst.translate()
+    except (Exception,SystemExit) as e:
+        print(f"Error al traducir el archivo SRT: {e}")
+        if os.path.exists(output_path):
+            os.remove(output_path)
+    base_input_path, _ = os.path.splitext(input_path)
+    if os.path.exists(f"{base_input_path}.progress"):
+        os.remove(f"{base_input_path}.progress")
+
 # Manejador de inicio
 @app.on_message(filters.command("start"))
 async def start(client, message):
@@ -58,6 +76,35 @@ async def stop(client, message):
     await message.reply("👋 ¡Adiós! El bot se ha detenido.")
     # Detiene el cliente de Pyrogram
     sys.exit(0)
+
+# Manejador archivos srt para traducirlos al español
+@app.on_message(filters.document)
+async def handle_srt(client, message):
+    if valid_users and str(message.from_user.id) not in valid_users:
+        await message.reply("❌ No tienes permiso para usar este bot.")
+        return
+    file_name = message.document.file_name
+    if not file_name.lower().endswith(".srt"):
+        await message.reply("❌ Por favor, envía un archivo con formato .srt para traducirlo al español.")
+        return
+
+    status = await message.reply("⏳ Descargando archivo SRT...")
+
+    # Descargar el archivo
+    try:
+        file_path = await message.download()
+    except Exception as e:
+        print(f"Error al descargar el archivo SRT: {e}")
+        await status.edit("❌ Error al descargar el archivo SRT. Por favor, inténtalo de nuevo.")
+        return
+    await status.edit("✅ Archivo SRT descargado. Traduciendo al Español...")
+    output_path = f"{os.path.splitext(file_path)[0]}.es.srt"
+    await traducir_srt(file_path, output_path)
+    if os.path.exists(output_path):
+        await message.reply_document(output_path, caption="Archivo SRT traducido al Español.")
+        os.remove(output_path)
+    if os.path.exists(file_path):
+        os.remove(file_path)
 
 # Manejador para recibir el video
 @app.on_message(filters.video)
@@ -112,17 +159,6 @@ async def language_selected(client, callback_query):
         f"🎬 Procesando video...\n🌐 Idioma registrado: **{seleccionado}**"
     )
 
-    # Aquí puedes guardar el idioma en una base de datos o procesar el archivo
-    # print(f"El video del mensaje {msg_id} está en {seleccionado}, ruta del archivo: {file_path}")
-
-    # Ejecutar whisper-ctranslate2 --output_format srt --output_dir {folder} --language {language} "{file_path}"
-    # folder=os.path.dirname(file_path)
-    # subprocess.run(["whisper-ctranslate2", "--output_format", "srt", "--output_dir", folder, "--language", language, file_path])
-    # Añadir el codigo de idioma al nombre del archivo de subtitulos
-    # base, ext = os.path.splitext(file_path)
-    # subtitulo_path = f"{base}.{language}.srt"
-    # os.rename(f"{base}.srt", subtitulo_path)
-
     # Transcribe con faster-whisper
     try:
         model = WhisperModel("small", device="cpu", compute_type="int8")
@@ -167,26 +203,19 @@ async def language_selected(client, callback_query):
         await callback_query.edit_message_text('Transcripción completa. Enviando subtítulos...')
         await callback_query.message.reply_document(subtitulo_path, caption=f"Subtítulos en {seleccionado} para el video.")
         if (language != "es"):
+            translated_path = f"{base}.{language}.srt"
             try:
-                # Traducción automática usando gemini_srt_translator
-                translated_path = f"{base}.es.srt"
-                gst.gemini_api_key = gemini_api_key
-                gst.gemini_api_key2 = gemini_api_key2
-                gst.target_language = "Spanish"
-                gst.input_file = subtitulo_path
-                gst.output_file= translated_path
-                gst.translate()
-
-                await callback_query.message.reply_document(translated_path, caption=f"Subtítulos traducidos al Español para el video.")
-                os.remove(translated_path)
+                await callback_query.edit_message_text('Traduciendo subtítulos al Español...')
+                await traducir_srt(subtitulo_path, translated_path)
+                if os.path.exists(translated_path):
+                    await callback_query.message.reply_document(translated_path, caption=f"Subtítulos traducidos al Español para el video.")
+                else:
+                    await callback_query.edit_message_text("❌ Error al traducir los subtítulos al Español.")
             except Exception as e:
                 print(f"Error al traducir los subtítulos: {e}")
-                await callback_query.message.reply_text("⚠️ No se pudieron traducir los subtítulos al Español.")
+                await callback_query.edit_message_text("❌ Error al traducir los subtítulos al Español.")
+                return
 
-        # si existe el archivo .{language}.progress, lo borra
-        if os.path.exists(f"{base}.{language}.progress"):
-            os.remove(f"{base}.{language}.progress")
-            await callback_query.message.reply_text("⚠️ No se pudieron traducir los subtítulos al Español.")
         if os.path.exists(translated_path):
             os.remove(translated_path)
         if os.path.exists(subtitulo_path):
