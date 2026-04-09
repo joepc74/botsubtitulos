@@ -186,8 +186,11 @@ async def language_selected(client, callback_query):
         # si existe el archivo .{language}.progress, lo borra
         if os.path.exists(f"{base}.{language}.progress"):
             os.remove(f"{base}.{language}.progress")
-
-        os.remove(subtitulo_path)
+            await callback_query.message.reply_text("⚠️ No se pudieron traducir los subtítulos al Español.")
+        if os.path.exists(translated_path):
+            os.remove(translated_path)
+        if os.path.exists(subtitulo_path):
+            os.remove(subtitulo_path)
 
 async def start_bot():
     await app.start()
