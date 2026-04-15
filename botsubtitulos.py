@@ -39,7 +39,7 @@ def format_timestamp(
         f"{hours_marker}{minutes:02d}:{seconds:02d}{decimal_marker}{milliseconds:03d}"
     )
 
-async def traducir_srt(input_path, output_path, target_language="Spanish"):
+async def traducir_srt(input_path, output_path, target_language="Spanish", model="gemini-2.5-flash"):
     print(f"Traduciendo {input_path} a {output_path} en idioma {target_language}")
     try:
         # Traducción automática usando gemini_srt_translator
@@ -48,6 +48,7 @@ async def traducir_srt(input_path, output_path, target_language="Spanish"):
         gst.target_language = target_language
         gst.input_file = input_path
         gst.output_file= output_path
+        gst.model_name = model
         gst.translate()
     except (Exception,SystemExit) as e:
         print(f"Error al traducir el archivo SRT: {e}")
@@ -93,20 +94,28 @@ async def handle_srt(client, message):
     # Descargar el archivo
     try:
         file_path = await message.download()
+        rutas[message.id] = file_path
     except Exception as e:
         print(f"Error al descargar el archivo SRT: {e}")
         await status.edit("❌ Error al descargar el archivo SRT. Por favor, inténtalo de nuevo.")
         return
-    await status.edit("✅ Archivo SRT descargado. Traduciendo al Español...")
-    output_path = f"{os.path.splitext(file_path)[0]}.es.srt"
-    await traducir_srt(file_path, output_path)
-    if os.path.exists(output_path):
-        await message.reply_document(output_path, caption="Archivo SRT traducido al Español.")
-        os.remove(output_path)
-    else:
-        await status.edit("❌ Error al traducir el archivo SRT al Español.")
-    if os.path.exists(file_path):
-        os.remove(file_path)
+
+    # Crear botones para elegir modelo
+    keyboard = types.InlineKeyboardMarkup([
+        [
+            types.InlineKeyboardButton("gemini-2.5-flash", callback_data=f"model|gemini-2.5-flash|{message.id}"),
+            types.InlineKeyboardButton("gemma-4-31b-it", callback_data=f"model|gemma-4-31b-it|{message.id}")
+        ],
+        [
+            types.InlineKeyboardButton("gemini-flash-latest", callback_data=f"model|gemini-flash-latest|{message.id}"),
+            types.InlineKeyboardButton("gemini-pro-latest", callback_data=f"model|gemini-pro-latest|{message.id}")
+        ]
+    ])
+
+    await status.edit(
+        "✅ Archivo SRT descargado.\n\n**Elige el modelo de traducción:**",
+        reply_markup=keyboard
+    )
 
 # Manejador para recibir el video
 @app.on_message(filters.video)
@@ -205,23 +214,44 @@ async def language_selected(client, callback_query):
         await callback_query.edit_message_text('Transcripción completa. Enviando subtítulos...')
         await callback_query.message.reply_document(subtitulo_path, caption=f"Subtítulos en {seleccionado} para el video.")
         if (language != "es"):
-            translated_path = f"{base}.{language}.srt"
-            try:
-                await callback_query.edit_message_text('Traduciendo subtítulos al Español...')
-                await traducir_srt(subtitulo_path, translated_path)
-                if os.path.exists(translated_path):
-                    await callback_query.message.reply_document(translated_path, caption=f"Subtítulos traducidos al Español para el video.")
-                else:
-                    await callback_query.edit_message_text("❌ Error al traducir los subtítulos al Español.")
-            except Exception as e:
-                print(f"Error al traducir los subtítulos: {e}")
-                await callback_query.edit_message_text("❌ Error al traducir los subtítulos al Español.")
-                return
-
-        if os.path.exists(translated_path):
-            os.remove(translated_path)
-        if os.path.exists(subtitulo_path):
+            rutas[callback_query.message.id] = subtitulo_path
+            keyboard = types.InlineKeyboardMarkup([
+                [
+                    types.InlineKeyboardButton("gemini-2.5-flash", callback_data=f"model|gemini-2.5-flash|{callback_query.message.id}"),
+                    types.InlineKeyboardButton("gemma-4-31b-it", callback_data=f"model|gemma-4-31b-it|{callback_query.message.id}")
+                ],
+                [
+                    types.InlineKeyboardButton("gemini-flash-latest", callback_data=f"model|gemini-flash-latest|{callback_query.message.id}"),
+                    types.InlineKeyboardButton("gemini-pro-latest", callback_data=f"model|gemini-pro-latest|{callback_query.message.id}")
+                ]
+            ])
+            await callback_query.edit_message_text(
+                'Transcripción completa. Enviando subtítulos...\n\n**Elige el modelo para traducir al Español:**',
+                reply_markup=keyboard
+            )
+        else:
+            # Si ya es español, limpiar
             os.remove(subtitulo_path)
+
+# Manejador para la selección del modelo
+@app.on_callback_query(filters.regex(r"^model\|"))
+async def model_selected(client, callback_query):
+    _, modelo, msg_id = callback_query.data.split("|")
+    file_path = rutas.get(int(msg_id))
+
+    await callback_query.answer(f"Modelo: {modelo}")
+    await callback_query.edit_message_text(f"Traduciendo al Español con {modelo}...")
+
+    output_path = f"{os.path.splitext(file_path)[0]}.es.srt"
+    await traducir_srt(file_path, output_path, model=modelo)
+    if os.path.exists(output_path):
+        await callback_query.message.reply_document(output_path, caption=f"Subtítulos traducidos al Español usando {modelo}.")
+        os.remove(output_path)
+    else:
+        await callback_query.edit_message_text("❌ Error al traducir los subtítulos al Español.")
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    rutas.pop(int(msg_id), None)
 
 async def start_bot():
     await app.start()
